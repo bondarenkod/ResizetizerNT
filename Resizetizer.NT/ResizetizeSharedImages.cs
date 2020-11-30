@@ -31,6 +31,8 @@ namespace Resizetizer
 
 		public override bool Execute()
 		{
+			Log.LogMessage("ResizetizeSharedImages Executing...");
+
 			System.Threading.Tasks.Task.Run(async () =>
 			{
 				try
@@ -43,31 +45,46 @@ namespace Resizetizer
 				}
 				finally
 				{
+					Log.LogMessage("ResizetizeSharedImages Completed...");
 					Complete();
 				}
 
 			});
 
+			Log.LogMessage("ResizetizeSharedImages Executing - returning...");
 			return base.Execute();
 		}
 
 		System.Threading.Tasks.Task DoExecute()
 		{
+			Log.LogMessage("ResizetizeSharedImages DoExecute...");
+
 			Svg.SvgDocument.SkipGdiPlusCapabilityCheck = true;
+
+			Log.LogMessage("ResizetizeSharedImages Skipped GDI Check...");
 
 			var images = ParseImageTaskItems(SharedImages);
 
+			Log.LogMessage($"ResizetizeSharedImages Parsed Image Task Items... {images?.Count ?? -1}");
+
 			var dpis = DpiPath.GetDpis(PlatformType);
+
+			Log.LogMessage("ResizetizeSharedImages Got DPIs...");
 
 			if (dpis == null || dpis.Length <= 0)
 				return System.Threading.Tasks.Task.CompletedTask;
 
 			var originalScaleDpi = DpiPath.GetOriginal(PlatformType);
 
+			Log.LogMessage("ResizetizeSharedImages Got original scale dpi...");
+
 			var resizedImages = new ConcurrentBag<ResizedImageInfo>();
+
+			Log.LogMessage("ResizetizeSharedImages Created concurrent image info bag...");
 
 			System.Threading.Tasks.Parallel.ForEach(images, img =>
 			{
+				Log.LogMessage($"ResizetizeSharedImages Resizing in parallel {img.Filename}...");
 				var opStopwatch = new Stopwatch();
 				opStopwatch.Start();
 
@@ -76,6 +93,8 @@ namespace Resizetizer
 				// By default we resize, but let's make sure
 				if (img.Resize)
 				{
+					Log.LogMessage("ResizetizeSharedImages Begin Resize...");
+
 					var resizer = new Resizer(img, IntermediateOutputPath, this);
 
 					foreach (var dpi in dpis)
@@ -86,6 +105,8 @@ namespace Resizetizer
 				}
 				else
 				{
+					Log.LogMessage("ResizetizeSharedImages Begin Copy...");
+
 					op = "Copy";
 					// Otherwise just copy the thing over to the 1.0 scale
 					var r = Resizer.CopyFile(img, originalScaleDpi, IntermediateOutputPath, InputsFile, this, PlatformType.ToLower().Equals("android"));
